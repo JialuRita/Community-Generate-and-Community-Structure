@@ -6,10 +6,8 @@ from sklearn.metrics import adjusted_rand_score
 import numpy as np
 from itertools import combinations
 
-
 def LFR_benchmark_graph():
     N = 1000  #节点数		
-
     for mu in np.arange(0.1,0.6,0.1):
         #LFR benchmark生成网络
         G = nx.LFR_benchmark_graph(n=N, tau1=3.0, tau2=1.5, mu=mu, 
@@ -37,11 +35,19 @@ def LFR_benchmark_graph():
         print("Louvain Evaluation: Modularity: {}, Coverage: {}, Performance: {}, Rand Index: {}, NMI: {}".format(*louvain_results))
         #保存结果
         save_result(mu, cnm_results, louvain_results)
-        save_graph(G, mu)
+        G_with_community = add_community_to_graph(G.copy(), cnm_partitions)
+        save_graph(G_with_community, mu, "cnm")
+        G_with_community = add_community_to_graph(G.copy(), louvain_partitions)
+        save_graph(G_with_community, mu, "louvain")
 
-def save_graph(G, mu):
-    #保存生成网络的.net文件
-    nx.write_pajek(G, f"lfr_network_mu_{mu:.2f}.net")
+def add_community_to_graph(G, partition):
+    #添加社团信息
+    for node, community_id in partition.items():
+        G.nodes[node]['community'] = str(community_id)
+    return G
+def save_graph(G, mu, evaluation):
+    #保存生成网络的.gexf文件
+    nx.write_gexf(G, f"lfr_network_mu_{mu:.2f}_evaluation_{evaluation}.gexf")
 
 def save_result(mu, cnm_results, louvain_results):
     with open(f'./results_mu_{mu:.2f}.txt', 'w') as f:
